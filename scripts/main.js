@@ -4,8 +4,7 @@ import {InitScore,
         GameOverUIActive,
         GameOverUIDeactive,
         preBlinkToPlay,
-        resetTimer,
-        setTimer
+        resetScore
     } from './ui.js';
 
 import {setPlayAudio,
@@ -32,8 +31,10 @@ const CameraInfo = require('CameraInfo');
 const face = FaceTracking.face(0);
 
 const buttonRetry = Scene.root.find('buttonRetry');
+const buttonPlay = Scene.root.find('startBox');
 // Material
 const retryButtonClickedMat = Materials.get('retryClickedMat');
+const retryButtonUnclickedMat = Materials.get('retryUnclickMat');
 
 const leftEyeOpeness = FaceTracking.face(0).leftEye.openness;
 const rightEyeOpeness = FaceTracking.face(0).rightEye.openness;
@@ -68,9 +69,12 @@ leftEyeOpeness.monitor().subscribe(function(event) {
 
 leftEyeOpeness.monitor().subscribe(function(event) {
     if(event.newValue > 0.3 && !leftEyesClosed){
-        if(canPeek && !gameOver){
+        if(canPeek && !gameOver && gameStart){
             UpdateScore();
-        }else{
+        }else if(canPeek && !gameOver && !gameStart){
+
+        }
+        else{
             GameOver();
         }
     }else{
@@ -83,6 +87,12 @@ leftEyeOpeness.monitor().subscribe(function(event) {
 //         GameStart();
 //     }
 // });
+
+TouchGestures.onTap().subscribe(function (gesture) {
+    if(!gameStart){
+        GameStart();
+    }
+});
 
 TouchGestures.onTap(buttonRetry).subscribe(function (gesture) {
     buttonRetry.material = retryButtonClickedMat;
@@ -104,8 +114,6 @@ function StartLoopedStatic(){
     intervalAudioPlay = Time.setInterval(() => {
         kidHide();
         setPlayAudio();
-        resetTimer();
-        setTimer();
         Diagnostics.log("first audio start");
         // Diagnostics.log(randNumber);
         ResetAudioKoronda();
@@ -115,7 +123,7 @@ function StartLoopedStatic(){
             kidPeek();
             WaitCanPeekAgain();
         }, 5500);
-    },9000);
+    },11000);
 }
 
 function WaitCanPeekAgain(){
@@ -132,8 +140,9 @@ function GameOver() {
 }
 
 function RestartGame(){
+    buttonRetry.material = retryButtonUnclickedMat;
+    resetScore();
     kidHide();
-    resetTimer();
     preBlinkToPlay();
     GameOverUIDeactive();
     gameStart = false;
