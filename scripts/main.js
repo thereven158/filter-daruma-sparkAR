@@ -7,9 +7,12 @@ import {InitScore,
         resetScore
     } from './ui.js';
 
-import {setPlayAudio,
-        ResetAudioKoronda,
-        StopAudio
+import {setPlayAudioDaruma,
+        ResetAudioDaruma,
+        setPlayAudioFail,
+        ResetAudioFail,
+        muteAudioFail,
+        unMuteAudioFail
         } from './audio.js';
 
 import {kidHide,
@@ -31,7 +34,6 @@ const CameraInfo = require('CameraInfo');
 const face = FaceTracking.face(0);
 
 const buttonRetry = Scene.root.find('buttonRetry');
-const buttonPlay = Scene.root.find('startBox');
 // Material
 const retryButtonClickedMat = Materials.get('retryClickedMat');
 const retryButtonUnclickedMat = Materials.get('retryUnclickMat');
@@ -44,19 +46,18 @@ var canPeek = true;
 var leftEyesClosed = false;
 var gameOver = false;
 var intervalAudioPlay;
+var failAudioPlayed = false;
 
-
-
-CameraInfo.isRecordingVideo.monitor().subscribe((value) => {
-    if (value.newValue) {
-        GameStart();
-        Diagnostics.log("rec");
-    }
-    else {
-        GameOver();
-        Diagnostics.log("no rec");
-    }
-});
+// CameraInfo.isRecordingVideo.monitor().subscribe((value) => {
+//     if (value.newValue) {
+//         GameStart();
+//         Diagnostics.log("rec");
+//     }
+//     else {
+//         GameOver();
+//         Diagnostics.log("no rec");
+//     }
+// });
 
 
 leftEyeOpeness.monitor().subscribe(function(event) {
@@ -102,6 +103,8 @@ TouchGestures.onTap(buttonRetry).subscribe(function (gesture) {
 function Init(){
     InitScore();
     StartLoopedStatic();
+    setPlayAudioFail();
+    muteAudioFail();
 }
 
 function GameStart(){
@@ -113,10 +116,10 @@ function GameStart(){
 function StartLoopedStatic(){
     intervalAudioPlay = Time.setInterval(() => {
         kidHide();
-        setPlayAudio();
+        setPlayAudioDaruma();
         Diagnostics.log("first audio start");
         // Diagnostics.log(randNumber);
-        ResetAudioKoronda();
+        ResetAudioDaruma();
         Time.setTimeout(function (){
             canPeek = false;
             Diagnostics.log("Init/ can peek: " + canPeek);
@@ -134,6 +137,12 @@ function WaitCanPeekAgain(){
 }
 
 function GameOver() {
+    if(!failAudioPlayed){
+        unMuteAudioFail();
+        ResetAudioFail();
+        failAudioPlayed = true;
+    }
+
     gameOver = true;
     GameOverUIActive();
 	Time.clearInterval(intervalAudioPlay);
@@ -141,10 +150,12 @@ function GameOver() {
 
 function RestartGame(){
     buttonRetry.material = retryButtonUnclickedMat;
+    failAudioPlayed = false;
     resetScore();
     kidHide();
     preBlinkToPlay();
     GameOverUIDeactive();
     gameStart = false;
     gameOver = false;
+    canPeek = true;
 }
