@@ -1,10 +1,11 @@
 import {InitScore,
         UpdateScore,
-        BlinkToPlay,
+        HiddenTapToPlayUI,
         GameOverUIActive,
         GameOverUIDeactive,
-        preBlinkToPlay,
-        resetScore
+        ShowTapToPlayUI,
+        resetScore,
+        CountDown
     } from './ui.js';
 
 import {setPlayAudioDaruma,
@@ -46,7 +47,9 @@ var canPeek = true;
 var leftEyesClosed = false;
 var gameOver = false;
 var intervalAudioPlay;
+var intervalCountdown;
 var failAudioPlayed = false;
+var countdown = 3;
 
 // CameraInfo.isRecordingVideo.monitor().subscribe((value) => {
 //     if (value.newValue) {
@@ -102,20 +105,45 @@ TouchGestures.onTap(buttonRetry).subscribe(function (gesture) {
 
 function Init(){
     InitScore();
-    StartLoopedStatic();
     setPlayAudioFail();
     muteAudioFail();
 }
 
 function GameStart(){
-    gameStart = true;
-    BlinkToPlay();
-    Init();
+    intervalCountdown = Time.setInterval(() => {
+        if(countdown >= 0){
+            CountDown(countdown); 
+            countdown--;
+            Diagnostics.log("1 second has pass");
+        }else{
+            gameStart = true;
+            HiddenTapToPlayUI();
+            Init();
+            Time.clearInterval(intervalCountdown);
+            FirstRun();
+        }
+    },1000);
+}
+
+function FirstRun(){
+    Time.setTimeout(function (){
+        kidHide();
+        setPlayAudioDaruma();
+        Diagnostics.log("gamestart audio start");
+        // Diagnostics.log(randNumber);
+        ResetAudioDaruma();
+        Time.setTimeout(function (){
+            canPeek = false;
+            Diagnostics.log("Init/ can peek: " + canPeek);
+            kidPeek();
+            WaitCanPeekAgain();
+        }, 5000);
+        StartLoopedStatic();
+    },3000);
 }
 
 function StartLoopedStatic(){
     intervalAudioPlay = Time.setInterval(() => {
-        kidHide();
         setPlayAudioDaruma();
         Diagnostics.log("first audio start");
         // Diagnostics.log(randNumber);
@@ -125,12 +153,13 @@ function StartLoopedStatic(){
             Diagnostics.log("Init/ can peek: " + canPeek);
             kidPeek();
             WaitCanPeekAgain();
-        }, 5500);
+        }, 5000);
     },11000);
 }
 
 function WaitCanPeekAgain(){
     Time.setTimeout(function (){
+        kidHide();
         canPeek = true;
         Diagnostics.log("WaitCanPeekAgain/ can peek: " + canPeek);
     }, 2000);
@@ -153,9 +182,10 @@ function RestartGame(){
     failAudioPlayed = false;
     resetScore();
     kidHide();
-    preBlinkToPlay();
+    ShowTapToPlayUI();
     GameOverUIDeactive();
     gameStart = false;
     gameOver = false;
     canPeek = true;
+    countdown = 3;
 }
